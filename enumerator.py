@@ -15,6 +15,7 @@ def load_out_of_scope_csv(csv_file):
         
         for row in reader:
             identifier = row.get("identifier", "").strip()
+            can_get_bounty = row.get("eligible_for_bounty").strip()
             if identifier.startswith("*."):
                 identifier = identifier[2:]
             
@@ -22,10 +23,10 @@ def load_out_of_scope_csv(csv_file):
                 continue
             
             parsed = urlparse(identifier)
-            if parsed.scheme or parsed.path not in ("", "/"):
+            if parsed.scheme or parsed.path not in ("", "/") and can_get_bounty == "true" and args.endpoints:
                 print(f"[{colorama.Fore.RED}Out Of Scope{colorama.Style.RESET_ALL}] Endpoint found in csv: {identifier}")
-                
-            out_of_scope.add(identifier.lower())
+            if can_get_bounty == "false":
+                out_of_scope.add(identifier.lower())
             
     return out_of_scope
 
@@ -61,8 +62,10 @@ def main():
     parser = argparse.ArgumentParser(prog="enumerator")
     parser.add_argument("-u", "--url", help="Target URL")
     parser.add_argument("-csv", "--csv", help="The path to your HackerOne bug bounty's csv scope")
+    parser.add_argument("-ep", "--endpoints", help="Wether you want to see out of scope endpoints in the output")
     
-    args = parser.parse_args()
+    global args
+    args =  parser.parse_args()
 
     if args.url:
         result = subprocess.run(["subfinder", "-d", args.url], capture_output=True, text=True, check=True)
